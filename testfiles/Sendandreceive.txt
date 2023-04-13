@@ -1,0 +1,130 @@
+/*
+This test is for memoryleaks between send_no_wait and recieve_no_wait 
+works if
+receive = recieve2 && send = send2
+
+it also tests if receive_wait works with send_no wait
+and if send_wait works with receive_no_wait
+and if send_wait works with receive_wait
+if it works correctly, the execution should go:
+
+Task 1: 
+test memory leaks
+receive_wait
+Task 2:
+Send_no_wait
+Task 1:
+send_wait
+Task 2:
+receive_no_wait
+Task 1:
+send_wait
+Task 2:
+receive_wait
+Task 1:
+terminate
+Task 2:
+terminate
+*/
+#include "system_sam3x.h"
+#include "at91sam3x8.h"
+#include "globalvar.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "kernel_functions.h"
+#include "linkedlist.h"
+
+  int send;
+  int recieve;
+  int send2;
+  int recieve2;
+  exception status;
+ mailbox* charMbox;
+ char varChar_t1 = 'a';
+ void task_body_2();
+ uint loop = 1;
+void task_body_1(){
+  
+    //checks how many we can send first
+    status = OK;
+    send = 0;
+    while(status!=FAIL)
+    {
+    status = send_no_wait(charMbox, &varChar_t1);
+    if(status != FAIL)
+      send++;
+    }
+    status = OK;
+    recieve = 0;
+    while(status!=FAIL)
+    {
+    status = receive_no_wait(charMbox, &varChar_t1);
+    if(status != FAIL)
+      recieve++;
+    }
+    send_wait(charMbox, &varChar_t1);
+    set_deadline(2000);
+    receive_wait( charMbox, &varChar_t1);
+    
+    //does it again to check for memory leaks
+    status = OK;
+    send2 = 0;
+    while(status!=FAIL)
+    {
+    status = send_no_wait(charMbox, &varChar_t1);
+    if(status != FAIL)
+      send2++;
+    }
+    status = OK;
+    recieve2 = 0;
+    while(status!=FAIL)
+    {
+    status = receive_no_wait(charMbox, &varChar_t1);
+    if(status != FAIL)
+      recieve2++;
+    }
+    set_deadline(5000);
+    if(loop == 1)
+    {
+    create_task(task_body_2, 5000);
+    }
+    receive_wait(charMbox,&varChar_t1);
+    send_wait(charMbox,&varChar_t1);
+    send_wait(charMbox,&varChar_t1);
+     
+    terminate();
+ 
+  
+}
+
+
+void task_body_2(){
+  
+  send_no_wait(charMbox, &varChar_t1);
+  receive_no_wait(charMbox,&varChar_t1);
+  receive_wait(charMbox,&varChar_t1);
+  set_deadline(1000000);
+  if(loop==1)
+  {
+  create_task(task_body_1, 4000);
+  loop++;
+  }
+  while(1){/*test cleared*/}
+}
+
+void main()
+{
+  SystemInit(); 
+  SysTick_Config(100000); 
+  SCB->SHP[((uint32_t)(SysTick_IRQn) & 0xF)-4] =  (0xE0);      
+  isr_off();
+  init_kernel();
+ 
+  charMbox = create_mailbox( 1000 , sizeof(char) );
+  
+  create_task( task_body_1 , 1000);
+  
+  run();
+  
+  while(1){ /* something is wrong with run */}
+}

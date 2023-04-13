@@ -1,0 +1,33 @@
+#include "system_sam3x.h"
+#include "at91sam3x8.h"
+#include "globalvar.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "kernel_functions.h"
+#include "linkedlist.h"
+
+
+void task_body_2(){
+  
+  terminate();
+}
+void task_body_1(){
+  
+  create_task( task_body_2 , 2000 );
+  terminate();
+  
+}
+void main()
+{
+  SystemInit(); 
+  SysTick_Config(100000); 
+  SCB->SHP[((uint32_t)(SysTick_IRQn) & 0xF)-4] =  (0xE0);      
+  isr_off();
+  init_kernel(); 
+  
+
+  create_task( task_body_1 , 5000 );
+
+  run();
+  while(1){ /* something is wrong with run */}
+}

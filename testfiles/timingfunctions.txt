@@ -1,0 +1,62 @@
+/*
+This testfile checks if the timerint function works as it should. 
+First we send a message that we wont recieve, this means that the
+send_wait will result in Deadline_reached in task 2. this means that it 
+will continue running after 2000 ticks. if waitticks is 2000 at the end 
+the waiting works.
+
+secondly we send a function to wait for 5000 ticks. This means 
+that it should be released after 5000 Ticks. If timerTicks is 5000
+at the end this works.
+
+*/
+
+
+#include "system_sam3x.h"
+#include "at91sam3x8.h"
+#include "globalvar.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "kernel_functions.h"
+#include "linkedlist.h"
+
+char varChar_t1 = 'a';
+mailbox* charMbox;
+int timerTicks;
+int waitTicks;
+void task_body_1(){
+  wait(5000);
+  timerTicks = ticks();
+  if(timerTicks != 5000)
+  while(1){/*test failed*/}
+  
+  while(1){/*all fine*/}
+  terminate();
+}
+void task_body_2(){
+  send_wait(charMbox, &varChar_t1);
+  waitTicks = ticks();
+  if(waitTicks!=2000)
+    while(1){/*test failed*/}
+  terminate();
+}
+
+void main()
+{
+  SystemInit(); 
+  SysTick_Config(100000); 
+  SCB->SHP[((uint32_t)(SysTick_IRQn) & 0xF)-4] =  (0xE0);      
+  isr_off();
+  init_kernel(); 
+  charMbox = create_mailbox( 1000 , sizeof(char) );
+  
+
+ create_task( task_body_1 , 10000 );
+
+  
+create_task( task_body_2 , 2000 );
+
+
+  run();
+  while(1){ /* something is wrong with run */}
+}

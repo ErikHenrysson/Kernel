@@ -1,0 +1,63 @@
+/*
+This test file is for the assisting library linkedlist.c
+except for addMessage, detachFirst and checkSleep as they are tested in the testfile for labb 2&3
+
+it uses the terminal I/O to show what is happening.
+*/
+
+
+#include "system_sam3x.h"
+#include "at91sam3x8.h"
+#include "globalvar.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "kernel_functions.h"
+#include "linkedlist.h"
+void task_body_1(){}
+void task_body_2(){}
+void task_body_3(){}
+void task_body_4(){}
+void task_body_5(){}
+void main()
+{
+  SystemInit(); 
+  SysTick_Config(100000); 
+  SCB->SHP[((uint32_t)(SysTick_IRQn) & 0xF)-4] =  (0xE0);      
+  isr_off();
+  init_kernel(); 
+  
+
+ create_task( task_body_1 , 1000 );
+
+  
+create_task( task_body_2 , 2000 );
+
+
+create_task( task_body_3 , 3000 );
+
+  
+create_task( task_body_4 , 500 );
+
+  
+create_task( task_body_5 , 1200 );
+
+   printf("List from start:\n");
+  printList(ReadyList);
+  printf("\n\nExtract in the middle of list:\n");
+  extract(ReadyList, ReadyList->pHead->pNext->pNext);
+  
+  printList(ReadyList);
+  printf("\n\nExtract first element:\n");
+  extractFirst(ReadyList);
+  printList(ReadyList);
+  printf("\n\nExtract last element:\n");
+  extract(ReadyList, ReadyList->pTail->pPrevious);
+  printList(ReadyList);
+  printf("\n\nExtract the rest of the elements:\n");
+  while(ReadyList->pHead != NULL)
+  {
+    extractFirst(ReadyList);
+  }
+  printList(ReadyList);
+  while(1){ /* something is wrong with run */}
+}
